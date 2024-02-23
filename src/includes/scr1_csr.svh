@@ -111,6 +111,7 @@ parameter bit SCR1_CSR_MIP_MEIP_RST_VAL             = 1'b0;
 
 parameter bit SCR1_CSR_MSTATUS_MIE_RST_VAL          = 1'b0;
 parameter bit SCR1_CSR_MSTATUS_MPIE_RST_VAL         = 1'b1;
+parameter bit SCR1_CSR_MSTATUS_MAE_RST_VAL          = 1'b0;
 
 parameter type_endianness SCR1_CSR_MSTATUSH_MBE_RST_VAL = LITTLE_ENDIAN;
 
@@ -148,6 +149,7 @@ parameter bit [1:0] SCR1_CSR_MSTATUS_MPP            = 2'b11;
 parameter int unsigned SCR1_CSR_MSTATUS_MIE_OFFSET  = 3;
 parameter int unsigned SCR1_CSR_MSTATUS_MPIE_OFFSET = 7;
 parameter int unsigned SCR1_CSR_MSTATUS_MPP_OFFSET  = 11;
+parameter int unsigned SCR1_CSR_MSTATUS_MAE_OFFSET  = 25;
 
 //MSTATUSH
 parameter int unsigned SCR1_CSR_MSTATUSH_MBE_OFFSET  = 5;

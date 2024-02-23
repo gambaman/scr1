@@ -101,10 +101,13 @@ module scr1_pipe_exu (
     input   logic                               csr2exu_ip_ie_i,            // Some IRQ pending and locally enabled
     input   logic                               csr2exu_mstatus_mie_up_i,   // MSTATUS or MIE update in the current cycle
 
-    `ifndef SCR1_IMMUTABLE_ENDIANNES
     // CSR -> EXU LOAD/STORE interface
-    input type_endianness                       csr2exu_endianness_i,         // access endianess
-    `endif // SCR1_IMMUTABLE_ENDIANNES
+`ifndef SCR1_IMMUTABLE_ENDIANNES // bi-endian is supported
+    input type_endianness                       csr2exu_endianness_i,       // access endianess
+`endif // SCR1_IMMUTABLE_ENDIANNES
+`ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+    output  logic                               csr2exu_mae_i,              // Machine mode address encoded byte oreder enable
+`endif // SCR1_NO_AEBO
 
     // EXU <-> DMEM interface
     output  logic                               exu2dmem_req_o,             // Data memory request
@@ -777,10 +780,13 @@ scr1_pipe_lsu i_lsu(
     .lsu2exu_exc_o              (lsu_exc_req             ),       // LSU exception
     .lsu2exu_exc_code_o         (lsu_exc_code            ),       // LSU exception code
 
-    `ifndef SCR1_IMMUTABLE_ENDIANNES
     // CSR -> LSU interface
+`ifndef SCR1_IMMUTABLE_ENDIANNES
     .exu2lsu_endianness_i       (csr2exu_endianness_i    ),
-    `endif // SCR1_IMMUTABLE_ENDIANNES
+`endif // SCR1_IMMUTABLE_ENDIANNES
+`ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+    .exu2lsu_mae_i              (csr2exu_mae_i           ),
+`endif // SCR1_NO_AEBO
 
 `ifdef SCR1_TDU_EN
     // TDU <-> LSU interface

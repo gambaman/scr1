@@ -204,10 +204,13 @@ type_scr1_csr_resp_e                        tdu2csr_resp;          // TDU respon
 logic                                       csr2tdu_req_qlfy;      //     Request to TDU
  `endif // SCR1_DBG_EN
 
- `ifndef SCR1_IMMUTABLE_ENDIANNES
   // CSR -> EXU
-  type_endianness                            csr2exu_endianness;   // Endianness of the data access
+ `ifndef SCR1_IMMUTABLE_ENDIANNES
+  type_endianness                            csr2exu_endianness;  // Endianness of the data access
  `endif // SCR1_IMMUTABLE_ENDIANNES
+ `ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+  logic                                      csr2exu_mae;         // Machine mode address encoded byte order enable
+ `endif // SCR1_NO_AEBO
 
 // EXU/LSU <-> TDU
 type_scr1_brkm_instr_mon_s                  exu2tdu_i_mon;         // Instruction monitor
@@ -416,10 +419,13 @@ scr1_pipe_exu i_pipe_exu (
     .csr2exu_ip_ie_i                (csr2exu_ip_ie           ),
     .csr2exu_mstatus_mie_up_i       (csr2exu_mstatus_mie_up  ),
 
-    `ifndef SCR1_IMMUTABLE_ENDIANNES
     // EXU <- CSR LOAD/STORE interface
-    .csr2exu_endianness_i       (csr2exu_endianness      ),
+    `ifndef SCR1_IMMUTABLE_ENDIANNES
+    .csr2exu_endianness_i           (csr2exu_endianness      ),
     `endif // SCR1_IMMUTABLE_ENDIANNES
+    `ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+    .csr2exu_mae_i                  (csr2exu_mae             ),
+    `endif // SCR1_NO_AEBO
 
     // EXU <-> DMEM interface
     .exu2dmem_req_o                 (pipe2dmem_req_o         ),
@@ -533,10 +539,13 @@ scr1_pipe_csr i_pipe_csr (
     .csr2exu_ip_ie_o            (csr2exu_ip_ie           ),
     .csr2exu_mstatus_mie_up_o   (csr2exu_mstatus_mie_up  ),
 
-    `ifndef SCR1_IMMUTABLE_ENDIANNES
     // CSR -> EXU LOAD/STORE interface
+    `ifndef SCR1_IMMUTABLE_ENDIANNES
     .csr2exu_endianness_o       (csr2exu_endianness      ),
     `endif // SCR1_IMMUTABLE_ENDIANNES
+    `ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+    .csr2exu_mae_o              (csr2exu_mae             ),
+    `endif // SCR1_NO_AEBO
 
 `ifdef SCR1_IPIC_EN
     // CSR <-> IPIC interface

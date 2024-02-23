@@ -30,6 +30,8 @@
 //`define SCR1_IMMUTABLE_ENDIANNES LITTLE_ENDIAN //only little-endian is supported
 //`define SCR1_IMMUTABLE_ENDIANNES BIG_ENDIAN    //only big-endian is supported
 
+//`define SCR1_NO_AEBO         // disable support for Address Encoded Byte Order
+
 `ifdef SCR1_ARCH_CUSTOM
 //------------------------------------------------------------------------------
 // INCLUDE SCR1_ARCH_CUSTOM.SVH

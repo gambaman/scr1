@@ -19,7 +19,7 @@
  // - Events (EXC, IRQ, MRET) logic
  // - CSR read/write interface
  // - CSR registers:
- //   - Machine Endianness Setup registers
+ //   - Machine Byte Order Setup registers
  //   - Machine Trap Setup registers
  //   - Machine Trap Handling registers
  //   - Machine Counters/Timers registers
@@ -117,19 +117,21 @@ module scr1_pipe_csr (
     input   type_scr1_csr_resp_e                        tdu2csr_resp_i,             // TDU response
 `endif // SCR1_TDU_EN
 
+    // CSR -> EXU LOAD/STORE interface
+`ifndef SCR1_IMMUTABLE_ENDIANNES
+    output  type_endianness                             csr2exu_endianness_o,       // Endianness of the data access
+`endif // SCR1_IMMUTABLE_ENDIANNES
+`ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+    output  logic                                       csr2exu_mae_o,              // Machine mode address encoded byte oreder enable
+`endif // SCR1_NO_AEBO
+
     // CSR <-> EXU PC interface
 `ifndef SCR1_CSR_REDUCED_CNT
     input   logic                                       exu2csr_instret_no_exc_i,   // Instruction retired (without exception)
 `endif // SCR1_CSR_REDUCED_CNT
-
-`ifndef SCR1_IMMUTABLE_ENDIANNES
-    // CSR -> EXU LOAD/STORE interface
-    output   type_endianness                            csr2exu_endianness_o,       // Endianness of the data access
-`endif // SCR1_IMMUTABLE_ENDIANNES
-
     input   logic [`SCR1_XLEN-1:0]                      exu2csr_pc_curr_i,          // Current PC
     input   logic [`SCR1_XLEN-1:0]                      exu2csr_pc_next_i,          // Next PC
-    output  logic [`SCR1_XLEN-1:0]                      csr2exu_new_pc_o            // Exception/IRQ/MRET new PC
+    output  logic [`SCR1_XLEN-1:0]                      csr2exu_new_pc_o           // Exception/IRQ/MRET new PC
 );
 
 //------------------------------------------------------------------------------
@@ -151,7 +153,7 @@ module scr1_pipe_csr (
 
 // MSTATUSH register
 logic [`SCR1_XLEN-1:0]                              csr_mstatush;           // Aggregated MSTATUSH
-`ifndef SCR1_IMMUTABLE_ENDIANNES //bi-endian is supported
+`ifndef SCR1_IMMUTABLE_ENDIANNES // bi-endian is supported
 logic                                               csr_mstatush_upd;       // MSTATUSH update enable
 type_endianness                                     csr_mstatush_mbe_ff;    // MSTATUSH: Machine mode endianess
 type_endianness                                     csr_mstatush_mbe_next;  // MSTATUSH: Machine mode endianess next value
@@ -164,6 +166,10 @@ logic                                               csr_mstatus_mie_ff;     // M
 logic                                               csr_mstatus_mie_next;   // MSTATUS: Global interrupt enable next value
 logic                                               csr_mstatus_mpie_ff;    // MSTATUS: Global interrupt enable prior to the trap
 logic                                               csr_mstatus_mpie_next;  // MSTATUS: Global interrupt enable prior to the trap next value
+`ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+logic                                               csr_mstatus_mae_ff;    // MSTATUS: Machine mode address encoded byte order enable
+logic                                               csr_mstatus_mae_next;  // MSTATUS: Machine mode address encoded byte order enable prior to the trap next value
+`endif  // SCR1_NO_AEBO
 
 // MIE register
 logic                                               csr_mie_upd;            // MIE update enable
@@ -671,9 +677,15 @@ always_ff @(negedge rst_n, posedge clk) begin
     if (~rst_n) begin
         csr_mstatus_mie_ff  <= SCR1_CSR_MSTATUS_MIE_RST_VAL;
         csr_mstatus_mpie_ff <= SCR1_CSR_MSTATUS_MPIE_RST_VAL;
+`ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+        csr_mstatus_mae_ff  <= SCR1_CSR_MSTATUS_MAE_RST_VAL;
+`endif // SCR1_NO_AEBO
     end else begin
         csr_mstatus_mie_ff  <= csr_mstatus_mie_next;
         csr_mstatus_mpie_ff <= csr_mstatus_mpie_next;
+`ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+        csr_mstatus_mae_ff  <= csr_mstatus_mae_next;
+`endif // SCR1_NO_AEBO
     end
 end
 
@@ -690,10 +702,16 @@ always_comb begin
         csr_mstatus_upd: begin
             csr_mstatus_mie_next  = csr_w_data[SCR1_CSR_MSTATUS_MIE_OFFSET];
             csr_mstatus_mpie_next = csr_w_data[SCR1_CSR_MSTATUS_MPIE_OFFSET];
+`ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+            csr_mstatus_mae_next  = csr_w_data[SCR1_CSR_MSTATUS_MAE_OFFSET];
+`endif // SCR1_NO_AEBO
         end
         default       : begin
             csr_mstatus_mie_next  = csr_mstatus_mie_ff;
             csr_mstatus_mpie_next = csr_mstatus_mpie_ff;
+`ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+            csr_mstatus_mae_next  = csr_mstatus_mae_ff;
+`endif // SCR1_NO_AEBO
         end
     endcase
 end
@@ -703,6 +721,9 @@ always_comb begin
     csr_mstatus[SCR1_CSR_MSTATUS_MIE_OFFSET]                               = csr_mstatus_mie_ff;
     csr_mstatus[SCR1_CSR_MSTATUS_MPIE_OFFSET]                              = csr_mstatus_mpie_ff;
     csr_mstatus[SCR1_CSR_MSTATUS_MPP_OFFSET+1:SCR1_CSR_MSTATUS_MPP_OFFSET] = SCR1_CSR_MSTATUS_MPP;
+`ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+    csr_mstatus[SCR1_CSR_MSTATUS_MAE_OFFSET]                               = csr_mstatus_mae_ff;
+`endif // SCR1_NO_AEBO
 end
 
 // MIE register

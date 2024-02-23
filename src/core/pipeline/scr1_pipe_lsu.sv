@@ -44,6 +44,9 @@ module scr1_pipe_lsu (
 `ifndef SCR1_IMMUTABLE_ENDIANNES
     input   type_endianness                     exu2lsu_endianness_i,       // Endianness of the data access
 `endif // SCR1_IMMUTABLE_ENDIANNES
+`ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+    input logic                                 exu2lsu_mae_i,              // Machine mode address encoded byte order enable
+`endif // SCR1_NO_AEBO
 
 `ifdef SCR1_TDU_EN
     // LSU <-> TDU interface
@@ -112,7 +115,9 @@ logic                       lsu_exc_hwbrk;      // LSU hardware breakpoint excep
 // endianess related signals
 logic [`SCR1_DMEM_DWIDTH-1:0] ordered_dmem2lsu_rdata; // Data memory read data
 // ordered according to the selected endianness
-type_endianness endianness; // selected endianness for the data access
+type_endianness endianness;                     // Selected endianness for the data access
+logic mae;                                      // Machine mode address encoded byte order
+
 logic [$clog2(`SCR1_XLEN)-4:0] swap_control;
 // controls how bytes are swapped are swapped according to the selected endianness:
 // If swap_control[0]=1 each even byte is swapped for the following (odd) byte
@@ -131,6 +136,11 @@ assign   endianness = exu2lsu_endianness_i;
 `else
 assign   endianness = `SCR1_IMMUTABLE_ENDIANNES;
 `endif // SCR1_IMMUTABLE_ENDIANNES
+`ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
+assign   mae = exu2lsu_mae_i;
+`else
+assign   mae = 1'b0;
+`endif // SCR1_NO_AEBO
 
  always_comb begin
    case (1'b1)
