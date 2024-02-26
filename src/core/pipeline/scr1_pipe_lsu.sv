@@ -249,7 +249,7 @@ assign lsu_fsm_idle = (lsu_fsm_curr == SCR1_LSU_FSM_IDLE);
 //
 
 // DMEM addr misalign logic
-assign dmem_addr_mslgn   = exu2lsu_req_i & ( (dmem_wdth_hword & exu2lsu_addr_i[0])
+assign dmem_addr_mslgn   = ~mae & exu2lsu_req_i & ( (dmem_wdth_hword & exu2lsu_addr_i[0])
                                            | (dmem_wdth_word  & |exu2lsu_addr_i[1:0]));
 assign dmem_addr_mslgn_l = dmem_addr_mslgn & dmem_cmd_load;
 assign dmem_addr_mslgn_s = dmem_addr_mslgn & dmem_cmd_store;
