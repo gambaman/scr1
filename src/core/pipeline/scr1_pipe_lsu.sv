@@ -298,7 +298,15 @@ end
 //------------------------------------------------------------------------------
 
 assign lsu2dmem_req_o   = exu2lsu_req_i & ~lsu_exc_req & lsu_fsm_idle;
-assign lsu2dmem_addr_o  = exu2lsu_addr_i;
+assign lsu2dmem_addr_o[`SCR1_DMEM_AWIDTH-1:2]  = exu2lsu_addr_i[`SCR1_DMEM_AWIDTH-1:2];
+always_comb begin //In this way the output address will be always aligned
+  case (1'b1)
+      dmem_wdth_byte  : lsu2dmem_addr_o[1:0] = exu2lsu_addr_i[1:0];
+      dmem_wdth_hword : lsu2dmem_addr_o[1:0] = {exu2lsu_addr_i[1],1'b0};
+      dmem_wdth_word  : lsu2dmem_addr_o[1:0] = 2'b0;
+  endcase
+end
+
 scr1_lsu_byte_swapper lsu2dmem_byte_swapper (
   .control(swap_control),
   .in(exu2lsu_sdata_i),
