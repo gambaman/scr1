@@ -76,6 +76,12 @@ typedef enum logic {
 } type_scr1_lsu_fsm_e;
 
 //------------------------------------------------------------------------------
+// Local parameters declaration
+//------------------------------------------------------------------------------
+
+localparam clog2width=$clog2(`SCR1_XLEN)-3;   //base2 log of G.P. registers size in bytes
+
+//------------------------------------------------------------------------------
 // Local signals declaration
 //------------------------------------------------------------------------------
 
@@ -115,15 +121,6 @@ logic                       lsu_exc_hwbrk;      // LSU hardware breakpoint excep
 // endianess related signals
 logic [`SCR1_DMEM_DWIDTH-1:0] ordered_dmem2lsu_rdata; // Data memory read data
 // ordered according to the selected endianness
-type_endianness endianness;                     // Selected endianness for the data access
-logic mae;                                      // Machine mode address encoded byte order
-
-logic [$clog2(`SCR1_XLEN)-4:0] swap_control;
-// controls how bytes are swapped are swapped according to the selected endianness:
-// If swap_control[0]=1 each even byte is swapped for the following (odd) byte
-// If swap_control[1]=1 each even halfword is swapped for the following halfword
-// (RV64 only) If swap_control[2]=1 the even word is swapped for the odd word
-logic [$clog2(`SCR1_XLEN)-4:0] swap_control_ff;  // swap_control register value
 
 //------------------------------------------------------------------------------
 // Control logic
@@ -131,24 +128,46 @@ logic [$clog2(`SCR1_XLEN)-4:0] swap_control_ff;  // swap_control register value
 
 // Byte order control logic
 
+type_endianness endianness;                     // Selected endianness for the data access
+logic mae;                                      // Machine mode address encoded byte order
+logic [clog2width-1:0] swap_control;
+// controls how bytes are swapped are swapped according to the selected endianness:
+// If swap_control[0]=1 each even byte is swapped for the following (odd) byte
+// If swap_control[1]=1 each even halfword is swapped for the following halfword
+// (RV64 only) If swap_control[2]=1 the even word is swapped for the odd word
+logic [clog2width-1:0] swap_control_ff;  // swap_control register value
+logic [clog2width-1:0] ls_addr_bit_mask;
+// This mask indicates which address bits should be zero in an aligned data
+// access and which of them will be used to control the byte order. Address bits
+// of index clog2width or above can have any value during an alignded access and
+// are never used to control the byte order. The value of ls_addr_bit_mask[i]
+// for i < clog2width has the following meaning:
+// -ls_addr_bit_mask[i]=0. If AEBO is enabled, bit i of the data address will
+//  be used to control the byte order of the data access. If AEBO is disabled,
+//  bit i of the data address will not be not affect the byte order and must be
+//  zero if the access is aligned.
+// -ls_addr_bit_mask[i]=1. Bit i of the data address will not be used to
+//  control the byte order of the data access and can be 1 even if the access is
+//  aligned.
+always_comb begin
+  case (1'b1)
+      dmem_wdth_byte  : ls_addr_bit_mask = '1 << 0;
+      dmem_wdth_hword : ls_addr_bit_mask = '1 << 1;
+      dmem_wdth_word  : ls_addr_bit_mask = '1 << 2;
+  endcase
+end
 `ifndef SCR1_IMMUTABLE_ENDIANNES
 assign   endianness = exu2lsu_endianness_i;
 `else
 assign   endianness = `SCR1_IMMUTABLE_ENDIANNES;
 `endif // SCR1_IMMUTABLE_ENDIANNES
+assign  swap_control = ({clog2width{endianness}} ^ exu2lsu_addr_i[clog2width-1:0])
+                       & ~ls_addr_bit_mask;
 `ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
 assign   mae = exu2lsu_mae_i;
 `else
 assign   mae = 1'b0;
 `endif // SCR1_NO_AEBO
-
- always_comb begin
-   case (1'b1)
-       dmem_wdth_byte  : swap_control = 2'b0;
-       dmem_wdth_hword : swap_control = {1'b0,endianness};
-       dmem_wdth_word  : swap_control = {endianness,endianness};
-   endcase
- end
 
  always_ff @(posedge clk) begin
      if (lsu_cmd_upd) begin
@@ -249,8 +268,8 @@ assign lsu_fsm_idle = (lsu_fsm_curr == SCR1_LSU_FSM_IDLE);
 //
 
 // DMEM addr misalign logic
-assign dmem_addr_mslgn   = ~mae & exu2lsu_req_i & ( (dmem_wdth_hword & exu2lsu_addr_i[0])
-                                           | (dmem_wdth_word  & |exu2lsu_addr_i[1:0]));
+assign dmem_addr_mslgn   = ~mae & exu2lsu_req_i &
+                          |(exu2lsu_addr_i[clog2width-1:0] & ~ls_addr_bit_mask);
 assign dmem_addr_mslgn_l = dmem_addr_mslgn & dmem_cmd_load;
 assign dmem_addr_mslgn_s = dmem_addr_mslgn & dmem_cmd_store;
 
@@ -298,14 +317,9 @@ end
 //------------------------------------------------------------------------------
 
 assign lsu2dmem_req_o   = exu2lsu_req_i & ~lsu_exc_req & lsu_fsm_idle;
-assign lsu2dmem_addr_o[`SCR1_DMEM_AWIDTH-1:2]  = exu2lsu_addr_i[`SCR1_DMEM_AWIDTH-1:2];
-always_comb begin //In this way the output address will be always aligned
-  case (1'b1)
-      dmem_wdth_byte  : lsu2dmem_addr_o[1:0] = exu2lsu_addr_i[1:0];
-      dmem_wdth_hword : lsu2dmem_addr_o[1:0] = {exu2lsu_addr_i[1],1'b0};
-      dmem_wdth_word  : lsu2dmem_addr_o[1:0] = 2'b0;
-  endcase
-end
+assign lsu2dmem_addr_o[`SCR1_DMEM_AWIDTH-1:clog2width]  = exu2lsu_addr_i[`SCR1_DMEM_AWIDTH-1:clog2width];
+assign lsu2dmem_addr_o[clog2width-1:0]  = exu2lsu_addr_i[clog2width-1:0] & ls_addr_bit_mask;
+//In this way the output address will be always aligned
 
 scr1_lsu_byte_swapper lsu2dmem_byte_swapper (
   .control(swap_control),
@@ -458,7 +472,7 @@ endgenerate
 endmodule : swapper
 
 module scr1_lsu_byte_swapper
-#(localparam controlwidth=$clog2(`SCR1_XLEN)-3) //base2 log of the size in bytes
+#(localparam controlwidth=$clog2(`SCR1_XLEN)-3) //base2 log of G.R. registers size in bytes
 (
   input logic [controlwidth-1:0] control,
   input logic [`SCR1_XLEN-1:0] in,
