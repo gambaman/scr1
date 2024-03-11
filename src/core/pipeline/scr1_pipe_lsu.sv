@@ -135,20 +135,19 @@ logic [clog2width-1:0] swap_control;
 // If swap_control[0]=1 each even byte is swapped for the following (odd) byte
 // If swap_control[1]=1 each even halfword is swapped for the following halfword
 // (RV64 only) If swap_control[2]=1 the even word is swapped for the odd word
-logic [clog2width-1:0] swap_control_ff;  // swap_control register value
-logic [clog2width-1:0] ls_addr_bit_mask;
-// This mask indicates which address bits should be zero in an aligned data
+logic [clog2width-1:0] swap_control_ff;  // swap_control registered value
+logic [clog2width-1:0] ls_addr_bit_mask; // Mask for the less significant address
+// bits. This mask indicates which address bits should be zero in an aligned data
 // access and which of them will be used to control the byte order. Address bits
 // of index clog2width or above can have any value during an alignded access and
 // are never used to control the byte order. The value of ls_addr_bit_mask[i]
 // for i < clog2width has the following meaning:
-// -ls_addr_bit_mask[i]=0. If AEBO is enabled, bit i of the data address will
-//  be used to control the byte order of the data access. If AEBO is disabled,
-//  bit i of the data address will not be not affect the byte order and must be
-//  zero if the access is aligned.
-// -ls_addr_bit_mask[i]=1. Bit i of the data address will not be used to
-//  control the byte order of the data access and can be 1 even if the access is
+// -ls_addr_bit_mask[i]=0. If AEBO is enabled, bit i of the address will be used
+//  to control the byte order of the data access. If AEBO is disabled, bit i of
+//  the address will affect the byte order and must be zero if the access is
 //  aligned.
+// -ls_addr_bit_mask[i]=1. Bit i of the data address will not be used to control
+//  the byte order of the data access and can be 1 even if the access is aligned.
 always_comb begin
   case (1'b1)
       dmem_wdth_byte  : ls_addr_bit_mask = '1 << 0;
