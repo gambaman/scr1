@@ -131,7 +131,7 @@ logic [`SCR1_DMEM_DWIDTH-1:0] ordered_dmem2lsu_rdata; // Data memory read data
 type_endianness endianness;                     // Selected endianness for the data access
 logic mae;                                      // Machine mode address encoded byte order
 logic [clog2width-1:0] swap_control;
-// controls how bytes are swapped are swapped according to the selected endianness:
+// controls how bytes are swapped according to the selected endianness:
 // If swap_control[0]=1 each even byte is swapped for the following (odd) byte
 // If swap_control[1]=1 each even halfword is swapped for the following halfword
 // (RV64 only) If swap_control[2]=1 the even word is swapped for the odd word
