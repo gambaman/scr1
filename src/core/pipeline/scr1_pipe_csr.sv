@@ -723,6 +723,7 @@ always_comb begin
     csr_mstatus[SCR1_CSR_MSTATUS_MPP_OFFSET+1:SCR1_CSR_MSTATUS_MPP_OFFSET] = SCR1_CSR_MSTATUS_MPP;
 `ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
     csr_mstatus[SCR1_CSR_MSTATUS_MAE_OFFSET]                               = csr_mstatus_mae_ff;
+    csr2exu_mae_o                                                          = csr_mstatus_mae_ff;
 `endif // SCR1_NO_AEBO
 end
 
