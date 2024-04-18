@@ -230,6 +230,9 @@ hello: | $(bld_dir)
 biendian_sample: | $(bld_dir)
 	-$(MAKE) -C $(tst_dir)/biendian_sample EXT_CFLAGS="$(EXT_CFLAGS) -fno-strict-aliasing  -fno-inline" ARCH=$(ARCH)
 
+AEBO_sample: | $(bld_dir)
+	-$(MAKE) -C $(tst_dir)/AEBO_sample EXT_CFLAGS="$(EXT_CFLAGS) -fno-strict-aliasing  -fno-inline" ARCH=$(ARCH)
+
 clean_hex: | $(bld_dir)
 	$(RM) $(bld_dir)/*.hex
 
