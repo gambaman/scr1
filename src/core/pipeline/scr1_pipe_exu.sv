@@ -106,7 +106,7 @@ module scr1_pipe_exu (
     input type_endianness                       csr2exu_endianness_i,       // access endianess
 `endif // SCR1_IMMUTABLE_ENDIANNES
 `ifndef SCR1_NO_AEBO // Address Encoded Byte Order is supported
-    output  logic                               csr2exu_mae_i,              // Machine mode address encoded byte oreder enable
+    input  logic                               csr2exu_mae_i,              // Machine mode address encoded byte order enable
 `endif // SCR1_NO_AEBO
 
     // EXU <-> DMEM interface
