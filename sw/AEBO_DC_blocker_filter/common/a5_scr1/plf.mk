@@ -2,5 +2,5 @@
 
 PLF_SYS_CLK ?= 30000000
 
-MARCH ?= rv32im
+MARCH ?= rv32im_zbb
 MABI  ?= ilp32
