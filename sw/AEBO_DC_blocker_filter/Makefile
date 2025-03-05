@@ -12,7 +12,7 @@ ifeq ("$(ENDIANNESS)","AEBO")
 CFLAGS += -DAEBO
 endif
 
-APP_SRC += main.c offset_filters.s prand16.c timing.s
+APP_SRC += main.c offset_filter.s offset_filter_be.s prand16.c timing.s
 
 INTERNAL_PRINTF=1
 
